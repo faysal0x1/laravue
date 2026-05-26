@@ -1,0 +1,88 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Helpers\QueryBuilderHelper;
+use App\Http\Requests\{{modelNamePlural}}\Store{{modelName}}Request;
+use App\Http\Requests\{{modelNamePlural}}\Update{{modelName}}Request;
+use App\Models\{{modelName}};
+use App\Services\{{modelName}}Service;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class {{modelName}}Controller extends Controller
+{
+    public function __construct(private readonly {{modelName}}Service $service) {}
+
+    public function index(Request $request): Response
+    {
+        return $this->renderIndex($request);
+    }
+
+    public function table(Request $request): Response
+    {
+        return $this->renderIndex($request);
+    }
+
+    public function create(): Response
+    {
+        return Inertia::render('{{modelNamePlural}}/Create');
+    }
+
+    public function edit({{modelName}} ${{modelVariable}}): Response
+    {
+        return Inertia::render('{{modelNamePlural}}/Edit', [
+            '{{modelVariable}}' => $this->service->toData(${{modelVariable}}),
+        ]);
+    }
+
+    private function renderIndex(Request $request): Response
+    {
+        ${{modelVariablePlural}} = $this->service->paginateData($request);
+
+        return Inertia::render('{{modelNamePlural}}/Index', [
+            '{{modelVariablePlural}}' => ${{modelVariablePlural}},
+            'filters' => QueryBuilderHelper::filters($request),
+        ]);
+    }
+
+    public function store(Store{{modelName}}Request $request): RedirectResponse
+    {
+        $this->service->create($request->validated());
+
+        return success_route('{{modelVariablePlural}}.index', '{{modelName}} created successfully.');
+    }
+
+    public function update(Update{{modelName}}Request $request, {{modelName}} ${{modelVariable}}): RedirectResponse
+    {
+        $this->service->update(${{modelVariable}}, $request->validated());
+
+        return success_route('{{modelVariablePlural}}.index', '{{modelName}} updated successfully.');
+    }
+
+    public function destroy({{modelName}} ${{modelVariable}}): RedirectResponse
+    {
+        $this->service->delete(${{modelVariable}});
+
+        return success_route('{{modelVariablePlural}}.index', '{{modelName}} deleted successfully.');
+    }
+
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:{{tableName}},id'],
+        ]);
+
+        $ids = array_values(array_unique(array_map(
+            fn (int|string $id): int => (int) $id,
+            $validated['ids'],
+        )));
+
+        $this->service->bulkDelete($ids);
+
+        return success_route('{{modelVariablePlural}}.index', 'Selected {{modelVariablePlural}} deleted successfully.');
+    }
+}

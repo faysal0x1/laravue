@@ -1,0 +1,26 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Repositories\{{modelNamePlural}};
+
+use App\Models\{{modelName}};
+use App\Repositories\BaseRepository;
+
+class {{modelName}}Repository extends BaseRepository implements {{modelName}}RepositoryInterface
+{
+    public function __construct({{modelName}} $model)
+    {
+        parent::__construct($model);
+    }
+
+    protected function getSearchableFields(): array
+    {
+        return [{{searchableFields}}];
+    }
+
+    protected function getSortableFields(): array
+    {
+        return [{{sortableFields}}];
+    }
+}

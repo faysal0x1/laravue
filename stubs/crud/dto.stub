@@ -1,0 +1,32 @@
+<?php
+
+namespace App\DTOs\{{modelName}};
+
+use App\Models\{{modelName}};
+
+class {{modelName}}Data
+{
+    public function __construct(
+        public int $id,
+{{properties}}
+    ) {}
+
+    public static function fromModel({{modelName}} ${{modelVariable}}): self
+    {
+        return new self(
+            id: ${{modelVariable}}->id,
+{{fromModelAssignments}}
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+{{toArrayAssignments}}
+        ];
+    }
+}

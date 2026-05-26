@@ -1,0 +1,117 @@
+<script setup>
+import { Link } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+import { dashboard } from '@/routes';
+import Button from 'primevue/button';
+import GlobalListingPage from '@/components/listing/GlobalListingPage.vue';
+import { useListingTable } from '@/composables/useListingTable.js';
+import { buildListingState, column, createListingProps } from '@/utils/tableUtils.js';
+import { deleteItemWithConfirmation } from '@/utils/listingActions.js';
+import {
+    bulkDestroy as {{modelVariablePlural}}BulkDestroy,
+    destroy as {{modelVariablePlural}}Destroy,
+    index as {{modelVariablePlural}}Index,
+    table as {{modelVariablePlural}}Table,
+    create as {{modelVariablePlural}}Create,
+    edit as {{modelVariablePlural}}Edit,
+} from '@/actions/App/Http/Controllers/{{modelName}}Controller';
+
+const props = defineProps({
+    {{modelVariablePlural}}: {
+        type: Object,
+        required: true,
+    },
+    filters: {
+        type: Object,
+        default: () => ({}),
+    },
+});
+
+defineOptions({
+    layout: () => ({
+        breadcrumbs: [
+            { title: 'Dashboard', href: dashboard() },
+            { title: '{{modelNamePlural}}', href: {{modelVariablePlural}}Index() },
+        ],
+    }),
+});
+
+const columns = [
+{{vueColumns}}
+];
+
+const selectedRows = ref([]);
+const { loading, searchTerm, tableState, firstRecordIndex, onTableChange } = useListingTable({
+    filters: props.filters,
+    initialPage: props.{{modelVariablePlural}}.current_page,
+    initialPerPage: props.{{modelVariablePlural}}.per_page,
+    postUrl: {{modelVariablePlural}}Table().url,
+    only: ['{{modelVariablePlural}}', 'filters'],
+});
+
+const rows = computed(() => props.{{modelVariablePlural}}.data ?? []);
+const resourceMeta = {
+    singular: '{{modelName}}',
+    plural: '{{modelNamePlural}}',
+};
+
+const listingProps = computed(() =>
+    createListingProps(buildListingState({
+        title: resourceMeta.plural,
+        subtitle: searchTerm.value ? `Results for "${searchTerm.value}"` : '',
+        rows: rows.value,
+        columns,
+        records: props.{{modelVariablePlural}},
+        tableState: tableState.value,
+        firstRecordIndex: firstRecordIndex.value,
+        searchTerm: searchTerm.value,
+        selectedRows: selectedRows.value,
+        loading: loading.value,
+        createUrl: {{modelVariablePlural}}Create().url,
+        createButtonLabel: `New ${resourceMeta.singular}`,
+    })),
+);
+
+const removeItem = async (item) => {
+    await deleteItemWithConfirmation({
+        title: `Delete ${resourceMeta.singular}?`,
+        text: `This will permanently delete this ${resourceMeta.singular.toLowerCase()}.`,
+        confirmButtonText: 'Delete',
+        url: {{modelVariablePlural}}Destroy(item.id).url,
+    });
+};
+
+const bulkDelete = async () => {
+    if (selectedRows.value.length === 0) return;
+
+    await deleteItemWithConfirmation({
+        title: `Delete selected ${resourceMeta.plural.toLowerCase()}?`,
+        text: `You are about to delete ${selectedRows.value.length} ${resourceMeta.plural.toLowerCase()}.`,
+        confirmButtonText: 'Delete all',
+        url: {{modelVariablePlural}}BulkDestroy().url,
+        data: { ids: selectedRows.value.map((item) => Number(item.id)) },
+        onSuccess: () => {
+            selectedRows.value = [];
+        },
+    });
+};
+</script>
+
+<template>
+    <GlobalListingPage
+        v-bind="listingProps"
+        @update:global-filter="searchTerm = $event"
+        @update:selected-rows="selectedRows = $event"
+        @change="onTableChange"
+        @bulk-delete="bulkDelete"
+    >
+        <template #actions="{ row }">
+            <div class="flex gap-2">
+                <Link :href="{{modelVariablePlural}}Edit(row.id).url">
+                    <Button icon="pi pi-pencil" size="small" text rounded />
+                </Link>
+                <Button icon="pi pi-trash" size="small" text rounded severity="danger" @click="removeItem(row)" />
+            </div>
+        </template>
+    </GlobalListingPage>
+</template>

@@ -1,0 +1,10 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Http\Controllers\{{modelName}}Controller;
+use Illuminate\Support\Facades\Route;
+
+Route::post('{{tableName}}/table', [{{modelName}}Controller::class, 'table'])->name('{{tableName}}.table');
+Route::resource('{{tableName}}', {{modelName}}Controller::class)->except(['show']);
+Route::delete('{{tableName}}/bulk-destroy', [{{modelName}}Controller::class, 'bulkDestroy'])->name('{{tableName}}.bulk-destroy');

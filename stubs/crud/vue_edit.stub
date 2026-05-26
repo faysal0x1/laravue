@@ -1,0 +1,68 @@
+<script setup>
+import { useForm } from '@inertiajs/vue3';
+import { dashboard } from '@/routes';
+import GlobalFormFields from '@/components/forms/GlobalFormFields.vue';
+import Button from 'primevue/button';
+import Card from 'primevue/card';
+import {
+    index as {{modelVariablePlural}}Index,
+    update as {{modelVariablePlural}}Update,
+} from '@/actions/App/Http/Controllers/{{modelName}}Controller';
+
+const props = defineProps({
+    {{modelVariable}}: {
+        type: Object,
+        required: true,
+    },
+});
+
+defineOptions({
+    layout: () => ({
+        breadcrumbs: [
+            { title: 'Dashboard', href: dashboard() },
+            { title: '{{modelNamePlural}}', href: {{modelVariablePlural}}Index() },
+            { title: 'Edit' },
+        ],
+    }),
+});
+
+const form = useForm({
+{{editFormFields}}
+});
+
+const fieldDefinitions = [
+{{vueFieldDefinitions}}
+];
+
+const submit = () => {
+    form.put({{modelVariablePlural}}Update(props.{{modelVariable}}.id).url);
+};
+</script>
+
+<template>
+    <div class="mx-auto max-w-3xl py-6">
+        <Card>
+            <template #title>Edit {{modelName}}</template>
+            <template #content>
+                <form @submit.prevent="submit" class="space-y-4">
+                    <GlobalFormFields :form="form" :fields="fieldDefinitions" />
+                    
+                    <div class="flex justify-end gap-2">
+                        <Button
+                            type="button"
+                            label="Cancel"
+                            severity="secondary"
+                            text
+                            @click="$inertia.visit({{modelVariablePlural}}Index().url)"
+                        />
+                        <Button
+                            type="submit"
+                            label="Update {{modelName}}"
+                            :loading="form.processing"
+                        />
+                    </div>
+                </form>
+            </template>
+        </Card>
+    </div>
+</template>

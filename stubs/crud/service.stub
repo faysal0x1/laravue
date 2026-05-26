@@ -1,0 +1,129 @@
+<?php
+
+namespace App\Services;
+
+use App\DTOs\{{modelName}}\{{modelName}}Data;
+use App\Models\{{modelName}};
+use App\Repositories\{{modelNamePlural}}\{{modelName}}RepositoryInterface;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Modules\Cache\Contracts\CacheServiceInterface;
+
+class {{modelName}}Service
+{
+    public function __construct(
+        private readonly {{modelName}}RepositoryInterface $repository,
+        private readonly CacheServiceInterface $cache,
+    ) {}
+
+    public function paginate(Request $request): LengthAwarePaginator
+    {
+        return $this->repository->paginate(
+            $request,
+            [{{selectColumns}}],
+        );
+    }
+
+    public function paginateData(Request $request): LengthAwarePaginator
+    {
+        return $this->paginate($request)->through(
+            fn ({{modelName}} ${{modelVariable}}) => {{modelName}}Data::fromModel(${{modelVariable}})->toArray(),
+        );
+    }
+
+    public function toData({{modelName}} ${{modelVariable}}): array
+    {
+        return {{modelName}}Data::fromModel(${{modelVariable}})->toArray();
+    }
+
+    public function cachedList(): array
+    {
+        return $this->cache->rememberForever(
+            {{modelName}}::cacheNamespace(),
+            'all',
+            fn () => $this->repository->all([{{selectColumns}}]),
+        );
+    }
+
+    public function create(array $data): {{modelName}}
+    {
+        $item = $this->repository->create($data);
+
+        {{mediaUploadLogic}}
+
+        audit_log(
+            action: '{{tableName}}.created',
+            modelType: {{modelName}}::class,
+            modelId: $item->id,
+            newValues: $item->only([{{fillableFields}}]),
+        );
+
+        return $item;
+    }
+
+    public function update({{modelName}} ${{modelVariable}}, array $data): {{modelName}}
+    {
+        $before = ${{modelVariable}}->only([{{fillableFields}}]);
+
+        /** @var {{modelName}} $updated */
+        $updated = $this->repository->update($data, ${{modelVariable}}->id);
+
+        {{mediaUpdateLogic}}
+
+        audit_log(
+            action: '{{tableName}}.updated',
+            modelType: {{modelName}}::class,
+            modelId: $updated->id,
+            oldValues: $before,
+            newValues: $updated->only([{{fillableFields}}]),
+        );
+
+        return $updated;
+    }
+
+    public function delete({{modelName}} ${{modelVariable}}): bool
+    {
+        $before = ${{modelVariable}}->only([{{fillableFields}}]);
+        $deleted = $this->repository->delete(${{modelVariable}}->id);
+
+        if ($deleted) {
+            audit_log(
+                action: '{{tableName}}.deleted',
+                modelType: {{modelName}}::class,
+                modelId: ${{modelVariable}}->id,
+                oldValues: $before,
+            );
+        }
+
+        return $deleted;
+    }
+
+    /**
+     * @param  array<int, int>  $ids
+     */
+    public function bulkDelete(array $ids): int
+    {
+        $items = {{modelName}}::query()
+            ->whereIn('id', $ids)
+            ->get([{{selectColumns}}]);
+
+        $deleted = DB::table('{{tableName}}')->whereIn('id', $ids)->delete();
+
+        if ($deleted > 0) {
+            audit_log(
+                action: '{{tableName}}.bulk-deleted',
+                modelType: {{modelName}}::class,
+                oldValues: [
+                    '{{tableName}}' => $items->toArray(),
+                ],
+                newValues: [
+                    'deleted_count' => $deleted,
+                    'ids' => $ids,
+                ],
+            );
+        }
+
+        return $deleted;
+    }
+}
