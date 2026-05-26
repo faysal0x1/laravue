@@ -16,16 +16,11 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
 
-    Shop::create([
-        'name' => 'Test Shop',
-    ]);
-
         // Seed roles and permissions first
         $this->call(RolesAndPermissionsSeeder::class);
         $this->call(ModuleSeeder::class);
         $this->call(SubModuleSeeder::class);
 
         $this->call(UsersSeeder::class);
-        $this->call(FinancialBuddySeeder::class);
     }
 }
