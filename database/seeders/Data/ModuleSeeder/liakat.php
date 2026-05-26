@@ -41,15 +41,6 @@ return [
         'sort_order' => 50,
     ],
     [
-        'id' => 105,
-        'title' => 'Social Links',
-        'route_name' => 'social-link.index',
-        'icon' => 'Link',
-        'permission' => 'social-link.view',
-        'sort_order' => 60,
-    ],
-    
-    [
         'id' => 301,
         'title' => 'Reports',
         'route_name' => 'reports.index',
